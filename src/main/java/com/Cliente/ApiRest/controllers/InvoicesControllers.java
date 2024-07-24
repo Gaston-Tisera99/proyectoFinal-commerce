@@ -78,6 +78,7 @@
                     // Si el producto no existe, agregarlo al carrito
                     detailData.setProduct(productOpt.get());
                     detailData.setInvoice(invoice);
+                    detailData.setPrice(product.getPrice());
                     invoiceDetails.add(detailData);
                 }
 
@@ -98,26 +99,15 @@
             }
         }
 
-        @DeleteMapping("/carts/{detailId}")
-        public ResponseEntity<?> deleteFromCart(@PathVariable Long detailId) {
+        @DeleteMapping("/{id}")
+        public void eliminarUnCliente(@PathVariable("id") Long id) {
             try {
-                // Get the Optional<Invoice_details>
-                Optional<Invoice_details> detailOpt = service.findInvoiceDetailById(detailId);
-                if (!detailOpt.isPresent()) {
-                    return ResponseEntity.notFound().build();
-                }
-
-                // Extract the Invoice from the Optional (assuming it's nested)
-                Invoice invoice = detailOpt.get().getInvoice(); // Assuming Invoice_details has a getInvoice() method
-
-                // ... rest of the code remains the same (find detail, remove, recalculate, save)
-
-                // Add the missing return statement
-                return ResponseEntity.ok().build(); // Assuming successful deletion
+                service.eliminarUnCliente(id);
             } catch (Exception e) {
-                System.out.println("Error al eliminar el producto del carrito: " + e.getMessage());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+                System.err.println("Error al eliminar un detalle: " + e.getMessage());
+                throw new RuntimeException("Error al eliminar un detalle", e);
             }
         }
+
 
     }

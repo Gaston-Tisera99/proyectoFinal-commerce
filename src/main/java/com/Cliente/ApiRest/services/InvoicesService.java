@@ -60,9 +60,16 @@ public class InvoicesService {
         return repository.findInvoiceDetailById(id);
     }
 
-    public void delete(Long id){
-        Invoice_details details = invoiceDetailsRepository.findById(id).orElseThrow(()-> new RuntimeException("detalle no encontrado: " + id));
-
-        invoiceDetailsRepository.deleteById(id);
+    public void eliminarUnCliente(Long id) {
+        try {
+            if (invoiceDetailsRepository.existsById(id)) {
+                invoiceDetailsRepository.deleteById(id);
+            } else {
+                throw new IllegalArgumentException("El ID proporcionado no existe: " + id);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error al eliminar el detalle con ID: " + id, e);
+        }
     }
+
 }

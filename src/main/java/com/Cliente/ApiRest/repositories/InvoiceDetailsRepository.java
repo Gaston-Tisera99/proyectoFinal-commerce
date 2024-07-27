@@ -1,11 +1,14 @@
 package com.Cliente.ApiRest.repositories;
 
-import com.Cliente.ApiRest.entities.Invoice;
-import com.Cliente.ApiRest.entities.Invoice_details;
+import java.util.List;
+
+import com.Cliente.ApiRest.entities.Client;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
+import com.Cliente.ApiRest.entities.Invoice_details;
 
+@Repository
 public interface InvoiceDetailsRepository extends JpaRepository<Invoice_details, Long> {
-    //Optional<Invoice> findByIdWithInvoice(Long id);
+    List<Invoice_details> findByClientAndDelivered(Client client, Boolean delivered);
 }

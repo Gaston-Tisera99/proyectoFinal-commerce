@@ -4,8 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Date;
 
 @Entity
 @Table(name = "invoices")
@@ -22,16 +21,9 @@ public class Invoice {
 
     // Ajusta según tu base de datos
     @Getter @Setter
-    private LocalDateTime createdAt;
+    private Date createdAt;
 
     @Getter @Setter
     private double total;
 
-    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Getter @Setter private List<Invoice_details> invoiceDetails;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
 }

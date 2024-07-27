@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import javax.swing.text.html.Option;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,55 +22,45 @@ public class InvoicesService {
     @Autowired private InvoiceDetailsRepository invoiceDetailsRepository;
     @Autowired private ClientsRepository clientsRepository;
 
-    private List<Invoice_details> detalle;
 
-    public List<Invoice_details> todos(){
-        return detalle;
-    }
-
-    public Invoice saveInvoice(Invoice invoice){
-        return repository.save(invoice);
-    }
-
-    public Optional<Invoice> readOneInvoice(Long id){
-        return repository.findById(id);
-    }
-
-    public Invoice_details saveInvoiceDetail(Invoice_details details){
-        return invoiceDetailsRepository.save(details);
-    }
-
-    public Invoice getOrCreateCartInvoice(Client client) {
-        // Buscar la factura del carrito del cliente
-        Optional<Invoice> cartInvoiceOpt = repository.findById(client.getId());
-
-        // Si la factura del carrito existe, devolverla
-        if (cartInvoiceOpt.isPresent()) {
-            return cartInvoiceOpt.get();
-        }
-
-        // Si la factura del carrito no existe, crear una nueva
-        Invoice cartInvoice = new Invoice();
-        cartInvoice.setClient(client);
-        cartInvoice.setCreatedAt(LocalDateTime.now());
-        cartInvoice.setTotal(0.0);
-        return repository.save(cartInvoice);
-    }
-
-    public Optional<Invoice_details> findInvoiceDetailById(Long id) {
-        return repository.findInvoiceDetailById(id);
-    }
-
-    public void eliminarUnCliente(Long id) {
-        try {
-            if (invoiceDetailsRepository.existsById(id)) {
-                invoiceDetailsRepository.deleteById(id);
-            } else {
-                throw new IllegalArgumentException("El ID proporcionado no existe: " + id);
+    public Invoice generateInvoice(Long clientId){
+        Optional<Client> clientOpt = clientsRepository.findById(clientId);
+        if(clientOpt.isPresent()){
+            Client client = clientOpt.get();
+            List<Invoice_details> details = invoiceDetailsRepository.findByClientAndDelivered(client, false);
+            if(details.isEmpty()){
+                throw new RuntimeException("No se encontro productos en el carrito");
+            }else{
+                Invoice invoice = new Invoice();
+                invoice.setClient(client);
+                invoice.setCreatedAt(new Date());
+                double total = 0.0;
+                for (Invoice_details details1 : details){
+                    total += details1.getAmount() * details1.getPrice();
+                    details1.setDelivered(true);
+                }
+                invoice.setTotal(total);
+                return repository.save(invoice);
             }
-        } catch (Exception e) {
-            throw new RuntimeException("Error al eliminar el detalle con ID: " + id, e);
+        }else{
+            throw new RuntimeException("CLiente no encontrado");
         }
     }
+
+    public Invoice getInvoicesByClientId(Long clientId){
+        Optional<Client> client = clientsRepository.findById(clientId);
+        if(client.isPresent()){
+            List<Invoice> invoices = client.get().getInvoice();
+            if(invoices.isEmpty()){
+                throw new RuntimeException("No se encontraron comprobantes generados por este cliente");
+            }
+            Invoice lastInvoice = invoices.get(invoices.size() - 1);
+            return lastInvoice;
+        }else{
+            throw new RuntimeException("Cliente no encontrado");
+        }
+
+    }
+
 
 }

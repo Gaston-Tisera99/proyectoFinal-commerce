@@ -1,5 +1,6 @@
 package com.Cliente.ApiRest.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,6 +20,12 @@ public class Client {
     @Getter @Setter private Integer docnumber;
 
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Invoice> invoices;
+    @JsonIgnore
+    @Getter @Setter
+    private List<Invoice_details> details;
+
+    @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    @Getter @Setter private List<Invoice> invoice;
 
 }

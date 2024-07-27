@@ -7,6 +7,11 @@
     import com.Cliente.ApiRest.services.ClientsService;
     import com.Cliente.ApiRest.services.InvoicesService;
     import com.Cliente.ApiRest.services.ProductsService;
+    import io.swagger.v3.oas.annotations.Operation;
+    import io.swagger.v3.oas.annotations.media.Content;
+    import io.swagger.v3.oas.annotations.responses.ApiResponse;
+    import io.swagger.v3.oas.annotations.responses.ApiResponses;
+    import io.swagger.v3.oas.annotations.tags.Tag;
     import org.springframework.beans.factory.annotation.Autowired;
     import org.springframework.http.HttpStatus;
     import org.springframework.http.ResponseEntity;
@@ -18,96 +23,49 @@
     import java.util.Optional;
 
     @RestController
-    @RequestMapping(path = "/api/v1")
+    @RequestMapping(path = "/api/v1/invoices")
+    @Tag(name="Rutas de Invoices", description = "CRUD de comprobantes")
     public class InvoicesControllers {
         @Autowired private InvoicesService service;
         @Autowired private ClientsService clienteService;
         @Autowired private ProductsService productsService;
 
-
-        @PostMapping("/carts")
-        public ResponseEntity<Invoice_details> addToCart(@RequestBody Invoice_details detailData) {
+        @Operation(summary = "Generar un comprobante", description = "Generar un comprobante de un cliente con el importe total del pedido")
+        @ApiResponses({
+                @ApiResponse(responseCode = "201", description = "Comprobante generado exitosamente", content = @Content(mediaType = "application/json")),
+                @ApiResponse(responseCode = "400", description = "Bad Request"),
+                @ApiResponse(responseCode = "404", description = "Cliente o carrito no encontrado"),
+                @ApiResponse(responseCode = "500", description = "Error de Servidor")
+        })
+        @PostMapping
+        public ResponseEntity<Invoice> generateInvoice(@RequestParam Long clientId){
             try {
-                Client client;
-
-                // Obtener el cliente del detalle de la factura
-                if (detailData.getInvoice() != null && detailData.getInvoice().getClient() != null) {
-                    client = detailData.getInvoice().getClient();
-                } else {
-                    // Si el cliente no está presente en el detalle de la factura, devolver una respuesta de error
-                    return ResponseEntity.badRequest().body(null);
-                }
-
-
-
-                // Validar la información del producto y la cantidad
-                if (detailData.getProduct() == null || detailData.getProduct().getId() <= 0 || detailData.getAmount() <= 0) {
-                    return ResponseEntity.badRequest().build();
-                }
-
-                // Buscar el producto en la base de datos
-                Optional<Product> productOpt = productsService.readOneProduct(detailData.getProduct().getId());
-                if (!productOpt.isPresent()) {
-                    return ResponseEntity.notFound().build();
-                }
-                // Obtener el producto desde la base de datos
-                Product product = productOpt.get();
-
-                // Obtener el carrito del cliente (si existe) o crear uno nuevo
-                Invoice invoice = service.getOrCreateCartInvoice(client);
-
-                // Manejar la lista de detalles de la factura potencialmente null
-                List<Invoice_details> invoiceDetails = invoice.getInvoiceDetails();
-                if (invoiceDetails == null) {
-                    invoiceDetails = new ArrayList<>(); // Inicializar lista vacía
-                    invoice.setInvoiceDetails(invoiceDetails);
-                }
-
-                // Validar la existencia del producto en el carrito
-                boolean productExists = invoiceDetails.stream()
-                        .anyMatch(item -> item.getProduct().getId().equals(detailData.getProduct().getId()));
-
-                // Si el producto existe, actualizar la cantidad
-                if (productExists) {
-                    Invoice_details existingItem = invoiceDetails.stream()
-                            .filter(item -> item.getProduct().getId().equals(detailData.getProduct().getId()))
-                            .findFirst().get();
-                    existingItem.setAmount(existingItem.getAmount() + detailData.getAmount());
-                    existingItem.calculatePrice();
-                } else {
-                    // Si el producto no existe, agregarlo al carrito
-                    detailData.setProduct(productOpt.get());
-                    detailData.setInvoice(invoice);
-                    detailData.setPrice(product.getPrice());
-                    invoiceDetails.add(detailData);
-                }
-
-                // Recalcular el total de la factura
-                double total = invoiceDetails.stream()
-                        .mapToDouble(item -> item.getProduct().getPrice() * item.getAmount())
-                        .sum();
-                invoice.setTotal(total);
-
-                // Guardar el carrito actualizado (factura con detalles)
-                service.saveInvoice(invoice);
-
-                // Devolver el detalle de la factura agregado
-                return new ResponseEntity<>(detailData, HttpStatus.CREATED);
-            } catch (Exception e) {
+                Invoice invoice = service.generateInvoice(clientId);
+                return ResponseEntity.ok(invoice);
+            }catch (RuntimeException e){
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }catch (Exception e){
                 System.out.println(e.getMessage());
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
             }
         }
 
-        @DeleteMapping("/{id}")
-        public void eliminarUnCliente(@PathVariable("id") Long id) {
+        @Operation(summary = "Obtener Comprobante por el id de un cliente", description = "Devuelve una lista de comprobantes pertenecientes a un cliente")
+        @ApiResponses({
+                @ApiResponse(responseCode = "201", description = "Comprobante encontrado exitosamente", content = @Content(mediaType = "application/json")),
+                @ApiResponse(responseCode = "400", description = "Bad Request"),
+                @ApiResponse(responseCode = "404", description = "Cliente no encontrados"),
+                @ApiResponse(responseCode = "500", description = "Error de Servidor")
+        })
+        @GetMapping("/{clientId}")
+        public ResponseEntity<Invoice> getInvoicesByClientId(@PathVariable Long clientId){
             try {
-                service.eliminarUnCliente(id);
-            } catch (Exception e) {
-                System.err.println("Error al eliminar un detalle: " + e.getMessage());
-                throw new RuntimeException("Error al eliminar un detalle", e);
+                Invoice invoices = service.getInvoicesByClientId(clientId);
+                return ResponseEntity.ok(invoices);
+            }catch(RuntimeException e){
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }catch(Exception e){
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
             }
         }
-
-
     }

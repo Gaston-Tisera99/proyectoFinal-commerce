@@ -3,6 +3,12 @@ package com.Cliente.ApiRest.controllers;
 
 import com.Cliente.ApiRest.entities.Client;
 import com.Cliente.ApiRest.services.ClientsService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,10 +19,17 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping(path = "api/v1/auth")
+@Tag(name="Rutas de clientes", description = "CRUD de clientes")
 public class ClientsController {
     @Autowired private ClientsService service;
 
     @PostMapping("/register")
+    @Operation(summary = "Registrar un nuevo cliente", description = "Registrar un nuevo cliente proporcionando los datos necesarios.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Cliente creado exitosamente", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Client.class))),
+            @ApiResponse(responseCode = "400", description = "Solicitud inválida"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
     public ResponseEntity<Client> createClient(@RequestBody Client data){
         try{
             Client client = service.saveClient(data);
@@ -29,6 +42,12 @@ public class ClientsController {
 
 
     @PutMapping("/me")
+    @Operation(summary = "Actualizar los datos del cliente", description = "Actualizar los datos del cliente utilizando los datos proporcionados.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cliente actualizado exitosamente", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Client.class))),
+            @ApiResponse(responseCode = "404", description = "Cliente no encontrado"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
     public ResponseEntity<Client> updateClient(@RequestBody Client newData) {
         try {
 
